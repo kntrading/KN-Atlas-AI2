@@ -1,8 +1,14 @@
+﻿//+------------------------------------------------------------------+
+//| KN Atlas AI                                                      |
+//| Brain.mqh                                                        |
+//| Version 2.0.0                                                    |
+//| Copyright © 2026 KN Trading                                      |
+//+------------------------------------------------------------------+
 #ifndef __BRAIN_MQH__
 #define __BRAIN_MQH__
 
-#include "Signal.mqh"
-#include "DecisionEngine.mqh"
+#include "../Models/Signal.mqh"
+#include "../Core/DecisionEngine.mqh"
 
 #include "../Scanner/TrendScanner.mqh"
 #include "../Scanner/LiquidityScanner.mqh"
@@ -26,6 +32,18 @@ private:
 
 public:
 
+   //--------------------------------------------------------
+   // Constructor
+   //--------------------------------------------------------
+
+   CKNBrain()
+   {
+   }
+
+   //--------------------------------------------------------
+   // Initialize
+   //--------------------------------------------------------
+
    bool Initialize()
    {
       m_trend.Initialize();
@@ -35,10 +53,14 @@ public:
       m_bos.Initialize();
       m_choch.Initialize();
 
-      Print("KN Atlas AI Brain Online");
+           Print("KN Atlas AI Brain Online");
 
       return(true);
    }
+
+   //--------------------------------------------------------
+   // Shutdown
+   //--------------------------------------------------------
 
    void Shutdown()
    {
@@ -50,41 +72,72 @@ public:
       m_choch.Shutdown();
    }
 
-   SSignal Analyze(string symbol,ENUM_TIMEFRAMES tf)
+   //--------------------------------------------------------
+   // Analyze Market
+   //--------------------------------------------------------
+
+   SSignal Analyze(string symbol, ENUM_TIMEFRAMES timeframe)
    {
       SSignal signal;
 
-      signal.Symbol=symbol;
-      signal.Timeframe=tf;
+      ZeroMemory(signal);
 
-      signal.Trend=
-      (m_trend.GetTrend(symbol,tf)==1);
+      signal.Symbol = symbol;
+      signal.Timeframe = timeframe;
 
-      signal.Liquidity=
-      m_liquidity.BuySideLiquidity(symbol,tf);
+      //-----------------------------------------------------
+      // Scanner Results
+      //-----------------------------------------------------
 
-      signal.FVG=
-      m_fvg.BullishFVG(symbol,tf);
+      signal.Trend =
+         (m_trend.GetTrend(symbol,timeframe) == 1);
 
-      signal.OrderBlock=
-      m_orderBlock.BullishOrderBlock(symbol,tf);
+      signal.Liquidity =
+         m_liquidity.BuySideLiquidity(symbol,timeframe);
 
-      signal.BOS=
-      m_bos.BullishBOS(symbol,tf);
+      signal.FVG =
+         m_fvg.BullishFVG(symbol,timeframe);
 
-      signal.CHOCH=
-      m_choch.BullishCHOCH(symbol,tf);
+      signal.OrderBlock =
+         m_orderBlock.BullishOrderBlock(symbol,timeframe);
 
-      signal.Confidence=
-      m_decision.CalculateConfidence(signal);
+      signal.BOS =
+         m_bos.BullishBOS(symbol,timeframe);
 
-      if(m_decision.IsTradeValid(signal))
-         signal.Direction=SIGNAL_BUY;
+      signal.CHOCH =
+         m_choch.BullishCHOCH(symbol,timeframe);
+
+      //-----------------------------------------------------
+      // Confidence Score
+      //-----------------------------------------------------
+
+      signal.Confidence = 0.0;
+
+      if(signal.Trend)       signal.Confidence += 20.0;
+      if(signal.Liquidity)   signal.Confidence += 15.0;
+      if(signal.FVG)         signal.Confidence += 15.0;
+      if(signal.OrderBlock)  signal.Confidence += 15.0;
+      if(signal.BOS)         signal.Confidence += 15.0;
+      if(signal.CHOCH)       signal.Confidence += 20.0;
+
+      //-----------------------------------------------------
+      // Trade Direction
+      //-----------------------------------------------------
+
+      if(signal.Confidence >= 70.0)
+         signal.Direction = TRADE_BUY;
       else
-         signal.Direction=SIGNAL_NONE;
+         signal.Direction = TRADE_NONE;
+
+      //-----------------------------------------------------
+      // Decision Engine
+      //-----------------------------------------------------
+
+      m_decision.EvaluateSignal(signal);
 
       return(signal);
    }
+
 };
 
 #endif
