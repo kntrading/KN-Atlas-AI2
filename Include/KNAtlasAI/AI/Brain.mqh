@@ -1,34 +1,28 @@
 ﻿//+------------------------------------------------------------------+
 //| KN Atlas AI                                                      |
 //| Brain.mqh                                                        |
-//| Version 2.0.0                                                    |
+//| Version 3.2.0                                                    |
 //| Copyright © 2026 KN Trading                                      |
 //+------------------------------------------------------------------+
-#ifndef __BRAIN_MQH__
-#define __BRAIN_MQH__
+#ifndef __KN_BRAIN_MQH__
+#define __KN_BRAIN_MQH__
 
 #include "../Models/Signal.mqh"
-#include "../Core/DecisionEngine.mqh"
 
-#include "../Scanner/TrendScanner.mqh"
-#include "../Scanner/LiquidityScanner.mqh"
-#include "../Scanner/FVGScanner.mqh"
-#include "../Scanner/OrderBlockScanner.mqh"
-#include "../Scanner/BOSScanner.mqh"
-#include "../Scanner/CHOCHScanner.mqh"
+#include "StrategyEngine.mqh"
+#include "ConfidenceEngine.mqh"
+
+#include "../Filters/FilterManager.mqh"
+#include "../Core/DecisionEngine.mqh"
 
 class CKNBrain
 {
 private:
 
-   CKNDecisionEngine     m_decision;
-
-   CKNTrendScanner       m_trend;
-   CKNLiquidityScanner   m_liquidity;
-   CKNFVGScanner         m_fvg;
-   CKNOrderBlockScanner  m_orderBlock;
-   CKNBOSScanner         m_bos;
-   CKNCHOCHScanner       m_choch;
+   CKNStrategyEngine    m_strategy;
+   CKNFilterManager     m_filters;
+   CKNConfidenceEngine  m_confidence;
+   CKNDecisionEngine    m_decision;
 
 public:
 
@@ -46,14 +40,12 @@ public:
 
    bool Initialize()
    {
-      m_trend.Initialize();
-      m_liquidity.Initialize();
-      m_fvg.Initialize();
-      m_orderBlock.Initialize();
-      m_bos.Initialize();
-      m_choch.Initialize();
+      m_strategy.Initialize();
+      m_filters.Initialize();
+      m_confidence.Initialize();
+      m_decision.Initialize();
 
-           Print("KN Atlas AI Brain Online");
+      Print("KN Atlas AI Brain Online");
 
       return(true);
    }
@@ -64,78 +56,73 @@ public:
 
    void Shutdown()
    {
-      m_trend.Shutdown();
-      m_liquidity.Shutdown();
-      m_fvg.Shutdown();
-      m_orderBlock.Shutdown();
-      m_bos.Shutdown();
-      m_choch.Shutdown();
+      m_strategy.Shutdown();
+      m_filters.Shutdown();
+      m_confidence.Shutdown();
+
+      Print("KN Atlas AI Brain Offline");
    }
 
    //--------------------------------------------------------
    // Analyze Market
    //--------------------------------------------------------
 
-   SSignal Analyze(string symbol, ENUM_TIMEFRAMES timeframe)
+   SSignal Analyze(string symbol,
+                   ENUM_TIMEFRAMES timeframe)
    {
-      SSignal signal;
-
-      ZeroMemory(signal);
-
-      signal.Symbol = symbol;
-      signal.Timeframe = timeframe;
-
       //-----------------------------------------------------
-      // Scanner Results
+      // Step 1 - Build Strategy Signal
       //-----------------------------------------------------
 
-      signal.Trend =
-         (m_trend.GetTrend(symbol,timeframe) == 1);
-
-      signal.Liquidity =
-         m_liquidity.BuySideLiquidity(symbol,timeframe);
-
-      signal.FVG =
-         m_fvg.BullishFVG(symbol,timeframe);
-
-      signal.OrderBlock =
-         m_orderBlock.BullishOrderBlock(symbol,timeframe);
-
-      signal.BOS =
-         m_bos.BullishBOS(symbol,timeframe);
-
-      signal.CHOCH =
-         m_choch.BullishCHOCH(symbol,timeframe);
+      SSignal signal =
+         m_strategy.BuildSignal(symbol,timeframe);
 
       //-----------------------------------------------------
-      // Confidence Score
+      // Step 2 - Run Filter Pipeline
       //-----------------------------------------------------
 
-      signal.Confidence = 0.0;
-
-      if(signal.Trend)       signal.Confidence += 20.0;
-      if(signal.Liquidity)   signal.Confidence += 15.0;
-      if(signal.FVG)         signal.Confidence += 15.0;
-      if(signal.OrderBlock)  signal.Confidence += 15.0;
-      if(signal.BOS)         signal.Confidence += 15.0;
-      if(signal.CHOCH)       signal.Confidence += 20.0;
+      if(!m_filters.Validate(signal))
+      {
+         signal.Status = SIGNAL_REJECTED;
+         return(signal);
+      }
 
       //-----------------------------------------------------
-      // Trade Direction
+      // Step 3 - Calculate Confidence
       //-----------------------------------------------------
 
-      if(signal.Confidence >= 70.0)
-         signal.Direction = TRADE_BUY;
-      else
-         signal.Direction = TRADE_NONE;
+      m_confidence.Calculate(signal);
 
       //-----------------------------------------------------
-      // Decision Engine
+      // Step 4 - Decision Engine
       //-----------------------------------------------------
 
-      m_decision.EvaluateSignal(signal);
+      m_decision.Execute(signal);
+
+      //-----------------------------------------------------
+      // Step 5 - Return Signal
+      //-----------------------------------------------------
 
       return(signal);
+   }
+
+   //--------------------------------------------------------
+   // Helper Functions
+   //--------------------------------------------------------
+
+   bool IsTradeApproved(const SSignal &signal)
+   {
+      return(signal.Status == SIGNAL_APPROVED);
+   }
+
+   double GetConfidence(const SSignal &signal)
+   {
+      return(signal.Confidence);
+   }
+
+   string GetConfidenceLabel(const SSignal &signal)
+   {
+      return(signal.ConfidenceLabel);
    }
 
 };

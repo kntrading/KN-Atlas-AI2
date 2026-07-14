@@ -1,7 +1,7 @@
 ﻿//+------------------------------------------------------------------+
 //| KN Atlas AI                                                      |
 //| DecisionEngine.mqh                                               |
-//| Version 2.0.0                                                    |
+//| Version 3.0.0                                                    |
 //| Copyright © 2026 KN Trading                                      |
 //+------------------------------------------------------------------+
 #ifndef __KN_DECISION_ENGINE_MQH__
@@ -50,40 +50,44 @@ public:
 
    bool EvaluateSignal(SSignal &signal)
    {
-      // Trading disabled
+      //-----------------------------------------------------
+      // Risk Checks
+      //-----------------------------------------------------
+
       if(!m_riskManager.IsTradingAllowed())
       {
          signal.RiskApproved = false;
-         signal.TradeApproved = false;
          signal.Status = SIGNAL_REJECTED;
+         signal.RejectReason = "Trading Disabled";
+
          return(false);
       }
 
-      // Basic Risk Validation
       if(!m_riskManager.ValidateSignal())
       {
          signal.RiskApproved = false;
-         signal.TradeApproved = false;
          signal.Status = SIGNAL_REJECTED;
+         signal.RejectReason = "Risk Manager Rejected";
+
          return(false);
       }
 
-      // Risk Approved
       signal.RiskApproved = true;
 
-      // Confidence Check
-      if(signal.Confidence >= 70.0)
+      //-----------------------------------------------------
+      // Confidence Decision
+      //-----------------------------------------------------
+
+      if(signal.Confidence >= 80.0)
       {
-         signal.TradeApproved = true;
-         signal.Status = SIGNAL_CONFIRMED;
-      }
-      else
-      {
-         signal.TradeApproved = false;
-         signal.Status = SIGNAL_VALID;
+         signal.Status = SIGNAL_APPROVED;
+         return(true);
       }
 
-      return(signal.TradeApproved);
+      signal.Status = SIGNAL_REJECTED;
+      signal.RejectReason = "Confidence Too Low";
+
+      return(false);
    }
 
    //--------------------------------------------------------
@@ -96,4 +100,4 @@ public:
    }
 };
 
-#endif // __KN_DECISION_ENGINE_MQH__
+#endif

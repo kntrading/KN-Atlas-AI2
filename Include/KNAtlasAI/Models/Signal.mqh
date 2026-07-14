@@ -1,146 +1,137 @@
 ﻿//+------------------------------------------------------------------+
 //| KN Atlas AI                                                      |
-//| Module : Signal                                                  |
-//| Version: 2.0.0                                                   |
-//| Author : KN Trading                                              |
+//| Signal.mqh                                                       |
+//| Version 3.1.0                                                    |
 //| Copyright © 2026 KN Trading                                      |
 //+------------------------------------------------------------------+
-#ifndef __KN_SIGNAL_MQH__
-#define __KN_SIGNAL_MQH__
+#ifndef __SIGNAL_MQH__
+#define __SIGNAL_MQH__
 
-#include "TradeRequest.mqh"
+//---------------------------------------------------------
+// Trade Direction
+//---------------------------------------------------------
+
+enum ENUM_TRADE_DIRECTION
+{
+   TRADE_NONE = 0,
+   TRADE_BUY,
+   TRADE_SELL
+};
 
 //---------------------------------------------------------
 // Signal Status
 //---------------------------------------------------------
+
 enum ENUM_SIGNAL_STATUS
 {
-   SIGNAL_INVALID = 0,
-   SIGNAL_VALID,
-   SIGNAL_CONFIRMED,
-   SIGNAL_EXECUTED,
-   SIGNAL_REJECTED
+   SIGNAL_NEW = 0,
+   SIGNAL_VALIDATED,
+   SIGNAL_FILTERED,
+   SIGNAL_APPROVED,
+   SIGNAL_REJECTED,
+   SIGNAL_EXECUTED
 };
 
 //---------------------------------------------------------
-// AI Signal Model
+// Signal Structure
 //---------------------------------------------------------
+
 struct SSignal
 {
-   //======================================================
-   // Identification
-   //======================================================
+   //------------------------------------------------------
+   // Instrument
+   //------------------------------------------------------
 
-   string Symbol;
+   string              Symbol;
+   ENUM_TIMEFRAMES     Timeframe;
 
-   ENUM_TIMEFRAMES Timeframe;
+   //------------------------------------------------------
+   // Trade
+   //------------------------------------------------------
 
    ENUM_TRADE_DIRECTION Direction;
 
-   //======================================================
-   // AI Status
-   //======================================================
-
-   ENUM_SIGNAL_STATUS Status;
-
-   double Confidence;
-
-   //======================================================
-   // Prices
-   //======================================================
-
    double EntryPrice;
-
    double StopLoss;
-
    double TakeProfit;
+   double LotSize;
 
-   //======================================================
-   // Smart Money Confirmation
-   //======================================================
+   //------------------------------------------------------
+   // Scanner Results
+   //------------------------------------------------------
 
    bool Trend;
-
-   bool Structure;
-
    bool Liquidity;
-
+   bool FVG;
+   bool OrderBlock;
    bool BOS;
-
    bool CHOCH;
 
-   bool FVG;
+   //------------------------------------------------------
+   // Market Filters
+   //------------------------------------------------------
 
-   bool OrderBlock;
+   bool SessionApproved;
+   bool TradingDayApproved;
+   bool HolidayApproved;
+   bool SpreadApproved;
+   bool VolatilityApproved;
+   bool NewsApproved;
 
-   //======================================================
-   // Session
-   //======================================================
+   //------------------------------------------------------
+   // Trade Filters
+   //------------------------------------------------------
 
-   string Session;
+   bool SymbolApproved;
+   bool CorrelationApproved;
+   bool TimeApproved;
 
-   //======================================================
-   // Execution
-   //======================================================
+   //------------------------------------------------------
+   // Risk Filters
+   //------------------------------------------------------
 
-   bool TradeApproved;
-
+   bool ExposureApproved;
    bool RiskApproved;
+
+   //------------------------------------------------------
+   // AI
+   //------------------------------------------------------
+
+   double Confidence;
+   double Probability;
+   double RiskReward;
+
+   string ConfidenceLabel;
+
+   //------------------------------------------------------
+   // Strategy
+   //------------------------------------------------------
+
+   string StrategyName;
+   string RejectReason;
+
+   //------------------------------------------------------
+   // Execution
+   //------------------------------------------------------
 
    bool Executed;
 
-   //======================================================
-   // Timestamp
-   //======================================================
+   ENUM_SIGNAL_STATUS Status;
 
-   datetime TimeCreated;
+   //------------------------------------------------------
+   // Statistics
+   //------------------------------------------------------
 
-   //======================================================
-   // Reset
-   //======================================================
+   datetime SignalTime;
+   datetime EntryTime;
+   datetime ExitTime;
 
-   void Reset()
-   {
-      Symbol = "";
+   double Profit;
+   double ProfitPips;
 
-      Timeframe = PERIOD_CURRENT;
+   ulong Ticket;
 
-      Direction = TRADE_NONE;
-
-      Status = SIGNAL_INVALID;
-
-      Confidence = 0.0;
-
-      EntryPrice = 0.0;
-
-      StopLoss = 0.0;
-
-      TakeProfit = 0.0;
-
-      Trend = false;
-
-      Structure = false;
-
-      Liquidity = false;
-
-      BOS = false;
-
-      CHOCH = false;
-
-      FVG = false;
-
-      OrderBlock = false;
-
-      Session = "";
-
-      TradeApproved = false;
-
-      RiskApproved = false;
-
-      Executed = false;
-
-      TimeCreated = TimeCurrent();
-   }
+   bool Win;
 };
 
 #endif

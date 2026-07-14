@@ -1,188 +1,89 @@
 //+------------------------------------------------------------------+
-//|                                                  RiskManager.mqh |
-//|                       KN Atlas AI Trading Engine                 |
-//|                       Copyright 2026 KN Trading                 |
+//| KN Atlas AI                                                      |
+//| RiskManager.mqh                                                  |
+//| Version 2.0.0                                                    |
 //+------------------------------------------------------------------+
-#pragma once
+#ifndef __KN_RISK_MANAGER_MQH__
+#define __KN_RISK_MANAGER_MQH__
 
-class CRiskManager
+#include "../Models/AccountSnapshot.mqh"
+#include "../Models/RiskProfile.mqh"
+
+class CKNRiskManager
 {
 private:
 
-   double m_riskPerTrade;
-   double m_maxDailyLoss;
-   double m_maxWeeklyLoss;
-   double m_maxDrawdown;
-
-   int    m_maxOpenTrades;
-
-   bool   m_tradingEnabled;
+   SAccountSnapshot m_account;
+   SRiskProfile     m_profile;
 
 public:
 
-   //=========================================================
+   //--------------------------------------------------------
    // Constructor
-   //=========================================================
+   //--------------------------------------------------------
 
-   CRiskManager()
+   CKNRiskManager()
    {
-      m_riskPerTrade   = 1.0;
-
-      m_maxDailyLoss   = 3.0;
-
-      m_maxWeeklyLoss  = 10.0;
-
-      m_maxDrawdown    = 15.0;
-
-      m_maxOpenTrades  = 3;
-
-      m_tradingEnabled = true;
+      m_account.Reset();
+      m_profile.Reset();
    }
 
-   //=========================================================
-   // Destructor
-   //=========================================================
+   //--------------------------------------------------------
+   // Initialize
+   //--------------------------------------------------------
 
-   ~CRiskManager()
+   bool Initialize()
    {
-
+      return(true);
    }
 
-   //=========================================================
+   //--------------------------------------------------------
+   // Set Risk Profile
+   //--------------------------------------------------------
+
+   void SetRiskProfile(const SRiskProfile &profile)
+   {
+      m_profile = profile;
+   }
+
+   //--------------------------------------------------------
+   // Set Account Snapshot
+   //--------------------------------------------------------
+
+   void SetAccount(const SAccountSnapshot &account)
+   {
+      m_account = account;
+   }
+
+   //--------------------------------------------------------
+   // Get Account
+   //--------------------------------------------------------
+
+   SAccountSnapshot GetAccount() const
+   {
+      return(m_account);
+   }
+
+   //--------------------------------------------------------
    // Trading Permission
-   //=========================================================
+   //--------------------------------------------------------
 
-   bool CanTrade()
+   bool IsTradingAllowed() const
    {
-      if(!m_tradingEnabled)
-         return(false);
+      return(m_profile.EnableTrading);
+   }
 
-      if(DailyLossExceeded())
-         return(false);
+   //--------------------------------------------------------
+   // Validate Signal
+   //--------------------------------------------------------
 
-      if(WeeklyLossExceeded())
-         return(false);
-
-      if(DrawdownExceeded())
-         return(false);
-
-      if(MaxTradesExceeded())
+   bool ValidateSignal() const
+   {
+      if(!m_profile.EnableTrading)
          return(false);
 
       return(true);
    }
-
-   //=========================================================
-   // Daily Loss Check
-   //=========================================================
-
-   bool DailyLossExceeded()
-   {
-      // Placeholder
-      // Live account calculations will be added later.
-
-      return(false);
-   }
-
-   //=========================================================
-   // Weekly Loss Check
-   //=========================================================
-
-   bool WeeklyLossExceeded()
-   {
-      return(false);
-   }
-
-   //=========================================================
-   // Drawdown Check
-   //=========================================================
-
-   bool DrawdownExceeded()
-   {
-      return(false);
-   }
-
-   //=========================================================
-   // Open Trade Limit
-   //=========================================================
-
-   bool MaxTradesExceeded()
-   {
-      return(false);
-   }
-
-   //=========================================================
-   // Getters
-   //=========================================================
-
-   double GetRiskPerTrade()
-   {
-      return(m_riskPerTrade);
-   }
-
-   double GetMaxDailyLoss()
-   {
-      return(m_maxDailyLoss);
-   }
-
-   double GetMaxWeeklyLoss()
-   {
-      return(m_maxWeeklyLoss);
-   }
-
-   double GetMaxDrawdown()
-   {
-      return(m_maxDrawdown);
-   }
-
-   int GetMaxOpenTrades()
-   {
-      return(m_maxOpenTrades);
-   }
-
-   bool TradingEnabled()
-   {
-      return(m_tradingEnabled);
-   }
-
-   //=========================================================
-   // Setters
-   //=========================================================
-
-   void SetRiskPerTrade(double value)
-   {
-      m_riskPerTrade = value;
-   }
-
-   void SetMaxDailyLoss(double value)
-   {
-      m_maxDailyLoss = value;
-   }
-
-   void SetMaxWeeklyLoss(double value)
-   {
-      m_maxWeeklyLoss = value;
-   }
-
-   void SetMaxDrawdown(double value)
-   {
-      m_maxDrawdown = value;
-   }
-
-   void SetMaxOpenTrades(int value)
-   {
-      m_maxOpenTrades = value;
-   }
-
-   void EnableTrading()
-   {
-      m_tradingEnabled = true;
-   }
-
-   void DisableTrading()
-   {
-      m_tradingEnabled = false;
-   }
-
 };
-//+------------------------------------------------------------------+
+
+#endif
